@@ -11,3 +11,5 @@ src/
 │   └── asistenciaService.js  ← lógica pura, conecta UI + api
 ├── App.js
 
+node index.js  
+npm start frontend

@@ -37,9 +37,9 @@ const CameraCapture = forwardRef(({ dni }, ref) => {
   const handleCapture = () => {
 
     //← ✅EN CASO NO HAYA CAMARA
-    const canvas = canvasRef.current;
-    const context = canvas.getContext('2d');
-    context.drawImage(videoRef.current, 0, 0, 300, 300);
+    //const canvas = canvasRef.current;
+    //const context = canvas.getContext('2d');
+    //context.drawImage(videoRef.current, 0, 0, 300, 300);
     //← ✅EN CASO NO HAYA CAMARA
 
     const now = new Date();
@@ -49,7 +49,7 @@ const CameraCapture = forwardRef(({ dni }, ref) => {
     enlace.download = filename;
 
     //← ✅EN CASO NO HAYA CAMARA
-    enlace.href = canvas.toDataURL();
+    //enlace.href = canvas.toDataURL();
     //← ✅EN CASO NO HAYA CAMARA
 
     enlace.click();
