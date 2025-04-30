@@ -1,85 +1,101 @@
-
 /* Card principal */
 .card {
   margin: 0 auto;
-    width: 80%;
-    max-width: 800px;
-    border-radius: 16px;
-    padding: 40px;
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
-    flex-direction: column;
-    gap: 40px;
-  }
-  
-  /* Parte superior */
-  .card-header {
-    text-align: center;
-  }
-  
-  .card-header h1 {
-    color: #003366;
-    font-size: 30px;
-    margin-bottom: 10px;
-  }
-  
-  .card-header .date {
-    font-size: 18px;
-    color: #333;
-    margin-bottom: 16px;
-  }
-  
-  .card-header .time {
-    font-size: 48px;
-    font-weight: bold;
-    color: #000;
-  }
-  
-  /* Cuerpo inferior: 2 columnas */
-  .card-body {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 30px;
-    align-items: center;
-  }
-  
-  /* Izquierda: formulario */
-  .form-section label {
-    display: block;
-    font-weight: bold;
-    font-size: 18px;
-    color: #003366;
-    margin-bottom: 10px;
-  }
-  
-  .form-section input {
-    width: 100%;
-    padding: 12px;
-    font-size: 16px;
-    border: none;
-    border-bottom: 2px solid #003366;
-    outline: none;
-    margin-bottom: 20px;
-    background-color: transparent;
-  }
-  
-  .form-section button {
-    padding: 12px 28px;
-    background-color: #003366;
-    color: white;
-    font-weight: bold;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .form-section button:hover {
-    background-color: #005599;
-  }
-  
-  /* Derecha: cámara */
-  .camera-section img {
-    width: 100%;
-    border-radius: 12px;
-    object-fit: cover;
-  }
+  width: 80%;
+  max-width: 800px;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  flex-direction: column;
+  gap: 40px;
+}
+
+/* Parte superior */
+.card-header {
+  text-align: center;
+}
+
+.card-header h1 {
+  color: #003366;
+  font-size: 30px;
+  margin-bottom: 10px;
+}
+
+.card-header .date {
+  font-size: 18px;
+  color: #333;
+  margin-bottom: 16px;
+}
+
+.card-header .time {
+  font-size: 48px;
+  font-weight: bold;
+  color: #000;
+}
+
+/* Cuerpo inferior: 2 columnas */
+.card-body {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  align-items: center;
+}
+
+/* Izquierda: formulario */
+.form-section label {
+  display: block;
+  font-weight: bold;
+  font-size: 18px;
+  color: #003366;
+  margin-bottom: 10px;
+}
+
+.form-section input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: none;
+  border-bottom: 2px solid #003366;
+  outline: none;
+  margin-bottom: 20px;
+  background-color: transparent;
+}
+
+.form-section button {
+  padding: 12px 28px;
+  background-color: #003366;
+  color: white;
+  font-weight: bold;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.form-section button:hover {
+  background-color: #005599;
+}
+
+/* Derecha: cámara */
+.camera-section img {
+  width: 100%;
+  border-radius: 12px;
+  object-fit: cover;
+}
+
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+/* Estilo para el botón deshabilitado */
+button.disabled {
+  background-color: grey;
+  cursor: not-allowed;
+}
+
+/* Estilo para el campo de entrada con error */
+input.error {
+  border: 2px solid red;
+}

@@ -26,21 +26,11 @@ db.connect(function (err) {
   console.log('Conectado a la base de datos MySQL' + db.threadId);
 });
 
-// const conector = mysql.createConnection({
-//     host: 'localhost',
-//     user: 'root',
-//     password: '$191591Jor',
-//     database: 'asistencia_unmsm',
-// })
-
-// conector.connect(function (err) {
-//     if (err) {
-//         console.error('Error de conexion: ' + err.stack);
-//         return;
-//     }
-//     console.log('Conectado a la base de datos con el identificador ' + conector.threadId);
-// });
-
+// Ponemos el servidor a escuchar
+const PORT = 9000; // o el que prefieras
+app.listen(PORT, () => {
+  console.log(`Servidor backend escuchando en http://localhost:${PORT}`);
+});
 
 // Ruta de prueba (opcional)
 app.get('/', (req, res) => {
@@ -49,115 +39,101 @@ app.get('/', (req, res) => {
 
 
 // Ruta para registrar asistencia
-app.post('/api/asistencia', (req, res) => {
+app.post('/api/asistencia', async (req, res) => {
   const { dni, imagen } = req.body;
   const fechaHora = new Date(); // Marca de tiempo del servidor
-  const horaActual = fechaHora.getHours() + ':' + fechaHora.getMinutes(); // Hora actual en formato 'HH:mm'
-  const fechaActual = fechaHora.toISOString().split('T')[0]; // Solo la fecha 'YYYY-MM-DD'
+  const options = { timeZone: 'America/Lima' }; // Hora de Lima
+  const horaActual = `${fechaHora.getHours()}:${fechaHora.getMinutes()}`;
+  const fechaActual = fechaHora.toLocaleDateString('en-CA', options); // Solo la fecha 'YYYY-MM-DD'
 
-  // Consulta para verificar si el DNI existe en la base de datos
-  const sql1 = `SELECT id, nombres,apellidos, rol_id FROM personas WHERE dni = ?`;
-
-  // Ejecutar la consulta para verificar si el DNI existe
-  db.query(sql1, [dni], (err, result) => {
-    if (err) {
-      console.error('Error al consultar la base de datos:', err);
-      return res.status(500).json({ success: false, message: 'Error al verificar el DNI' });
-    }
-
-    // Si el DNI no existe, devolver un error
+  try {
+    // Paso 1: Verificar si el DNI existe
+    const result = await query('SELECT id, nombres, apellidos, rol_id FROM personas WHERE dni = ?', [dni]);
     if (result.length === 0) {
-      return res.status(404).json({ success: false, message: 'Persona no encontrada con ese DNI' });
+      return res.status(404).json({ success: false, message: 'Persona no encontrada con DNI: '+ dni });
     }
 
-    // Si el DNI existe, obtenemos el ID de la persona y su rol
     const personaId = result[0].id;
+    const nombres = result[0].nombres;
+    const apellidos = result[0].apellidos;
     const rolId = result[0].rol_id;
 
-    // Consulta para obtener los horarios permitidos para el rol de la persona
-    const sql2 = `SELECT hora_inicio, hora_fin FROM horarios_permitidos WHERE rol_id = ?`;
+    // Paso 2: Obtener horarios permitidos para el rol
+    const horarioResult = await query('SELECT hora_inicio, hora_fin FROM horarios_permitidos WHERE rol_id = ?', [rolId]);
+    if (horarioResult.length === 0) {
+      return res.status(404).json({ success: false, message: 'Horarios no definidos para el rol' });
+    }
 
-    db.query(sql2, [rolId], (err, horarioResult) => {
-      if (err) {
-        console.error('Error al consultar los horarios permitidos:', err);
-        return res.status(500).json({ success: false, message: 'Error al verificar los horarios permitidos' });
-      }
+    const { hora_inicio: horaInicio, hora_fin: horaFin } = horarioResult[0];
 
-      // Si no se encuentran los horarios para el rol, devolver un error
-      if (horarioResult.length === 0) {
-        return res.status(404).json({ success: false, message: 'Horarios no definidos para el rol' });
-      }
+    // Paso 3: Validar si la hora actual está dentro del rango permitido
+    const tipoAsistenciaId = validarHora(horaActual, horaInicio, horaFin);
+    if (!tipoAsistenciaId) {
+      return res.status(400).json({ success: false, message: 'Fuera del horario permitido para tu rol' });
+    }
 
-      // Obtener los horarios de entrada y salida
-      const horaInicio = horarioResult[0].hora_inicio;  // Ejemplo: '08:00'
-      const horaFin = horarioResult[0].hora_fin;        // Ejemplo: '18:00'
+    // Paso 4: Verificar si ya existe un registro de asistencia para hoy
+    const existingAsistencia = await query('SELECT * FROM asistencias WHERE persona_id = ? AND DATE(fecha) = ? AND tipo_asistencia_id = ?', [personaId, fechaActual, tipoAsistenciaId]);
+    if (existingAsistencia.length > 0) {
+      let tipoAsistencia = tipoAsistenciaId === 'A001' ? 'Ingreso' : 'Salida';
+      return res.status(400).json({ success: false, message: `Ya has registrado tu  <strong>${tipoAsistencia}</strong> para hoy <br> ${nombres} ${apellidos}` });
+    }
 
-      // Convertir las horas de inicio y fin en formato comparable (HH:mm)
-      const [horaInicioH, horaInicioM] = horaInicio.split(':').map(num => parseInt(num, 10));
-      const [horaFinH, horaFinM] = horaFin.split(':').map(num => parseInt(num, 10));
-      const [horaActualH, horaActualM] = horaActual.split(':').map(num => parseInt(num, 10));
+    // Paso 5: Registrar la asistencia
+    const insertResult = await query('INSERT INTO asistencias (persona_id, fecha_hora, fecha, tipo_asistencia_id, evidencia_id) VALUES (?, ?, ?, ?, ?)', [personaId, fechaHora, fechaActual, tipoAsistenciaId, imagen]);
 
-      // Validar si la hora actual está dentro del rango permitido para el ingreso
-      const horaInicioEnMinutos = horaInicioH * 60 + horaInicioM;
-      const horaFinEnMinutos = horaFinH * 60 + horaFinM;
-      const horaActualEnMinutos = horaActualH * 60 + horaActualM;
+    return res.json({ success: true, message: 'Asistencia registrada exitosamente: \n' +' ' +nombres + ' ' + apellidos});
 
-      let tipoAsistenciaId;
+  } catch (err) {
+    console.error('Error en la operación:', err);
+    return res.status(500).json({ success: false, message: 'Error al procesar la solicitud' });
+  }
+});
 
-      // Determinar si la persona está registrando un ingreso o salida
-      if (horaActualEnMinutos >= horaInicioEnMinutos && horaActualEnMinutos <= horaFinEnMinutos) {
-        // Si la hora actual está dentro del rango de ingreso, registrar el ingreso
-        tipoAsistenciaId = 'A001'; // A001 es para ingreso
-      } else if (horaActualEnMinutos > horaFinEnMinutos) {
-        // Si la hora actual está después de la hora de salida, registrar la salida
-        tipoAsistenciaId = 'A002'; // A002 es para salida
-      } else {
-        // Si no está dentro de los rangos, retornar un error
-        return res.status(400).json({ success: false, message: 'Fuera del horario permitido para tu rol' });
-      }
-
-      // Verificar si ya existe un registro de asistencia para esa persona en el mismo día
-      console.log(fechaActual);
-      const sql3 = `SELECT * FROM asistencias WHERE persona_id = ? AND DATE(fecha) = ? AND tipo_asistencia_id = ?`;
-      console.log(sql3);
-      db.query(sql3, [personaId, fechaActual, tipoAsistenciaId], (err, existingAsistencia) => {
-        if (err) {
-          console.error('Error al verificar la asistencia existente:', err);
-          return res.status(500).json({ success: false, message: 'Error al verificar la asistencia previa' });
-        }
-
-        // Si ya existe un registro de ese tipo (ingreso o salida) en el mismo día, no permitir otro
-        if (existingAsistencia.length > 0) {
-          console.log(existingAsistencia.length + 'ya existe');
-          return res.status(400).json({ success: false, message: 'Ya has registrado tu asistencia para hoy' });
-        } else {
-          // Prepara la consulta para insertar la asistencia
-          const sql = `INSERT INTO asistencias (persona_id, fecha_hora,fecha, tipo_asistencia_id, evidencia_id) VALUES (?, ?,?, ?, ?)`;
-
-          // Insertar el registro de asistencia
-          db.query(sql, [personaId, fechaHora, fechaActual, tipoAsistenciaId, imagen], (err, result) => {
-            if (err) {
-              console.error('Error al insertar en la base de datos:', err);
-              return res.status(500).json({ success: false, message: 'Error al registrar la asistencia 2000' });
-            }
-
-            // Enviar una respuesta con éxito
-            return res.json({ success: true, message: 'Asistencia registrada exitosamente' });
-          });
-        }
-
-
-
-      });
+// Función para ejecutar consultas de forma limpia usando Promesas
+function query(sql, params) {
+  return new Promise((resolve, reject) => {
+    db.query(sql, params, (err, result) => {
+      if (err) return reject(err);
+      resolve(result);
     });
   });
-});
+}
+
+// Función para validar la hora actual con el rango permitido
+function validarHora(horaActual, horaInicio, horaFin) {
+  // Asegurarse de que las horas estén siempre en formato de 2 dígitos
+  const formatHora = (hora) => {
+    const [h, m] = hora.split(':').map(num => num.padStart(2, '0'));
+    return `${h}:${m}`;
+  }
+
+  // Aseguramos que todas las horas estén en el formato correcto de 'HH:mm'
+  horaActual = formatHora(horaActual);
+  horaInicio = formatHora(horaInicio);
+  horaFin = formatHora(horaFin);
+
+  const [horaInicioH, horaInicioM] = horaInicio.split(':').map(num => parseInt(num, 10));
+  const [horaFinH, horaFinM] = horaFin.split(':').map(num => parseInt(num, 10));
+  const [horaActualH, horaActualM] = horaActual.split(':').map(num => parseInt(num, 10));
+
+  // Convertir todo a minutos para comparar
+  const horaInicioEnMinutos = horaInicioH * 60 + horaInicioM;
+  const horaFinEnMinutos = horaFinH * 60 + horaFinM;
+  const horaActualEnMinutos = horaActualH * 60 + horaActualM;
 
 
+  // Dependiendo del rol, asignar el tipo de asistencia
+  let tipoAsistenciaId = null;
 
 
-// Ponemos el servidor a escuchar
-const PORT = 9000; // o el que prefieras
-app.listen(PORT, () => {
-  console.log(`Servidor backend escuchando en http://localhost:${PORT}`);
-});
+  // Si la hora está dentro del rango permitido, asignar ingreso o salida
+  if (horaActualEnMinutos >= horaInicioEnMinutos && horaActualEnMinutos <= horaFinEnMinutos) {
+    tipoAsistenciaId = 'A001'; // Ingreso
+  } else if (horaActualEnMinutos > horaFinEnMinutos) {
+    tipoAsistenciaId = 'A002'; // Salida
+  }
+
+  // Retornamos el tipo de asistencia calculado
+  return tipoAsistenciaId;
+}
