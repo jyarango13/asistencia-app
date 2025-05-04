@@ -18,6 +18,7 @@ const AsistenciaCard = () => {
   const inputDniRef = useRef();
   const btnRegRef = useRef();
   const [currentTime, setCurrentTime] = useState({ date: '', time: '' });
+  const [isLoading, setIsLoading] = useState(false); // Estado de loading
   //const [isInputDisabled, setIsInputDisabled] = useState(false); // Controla si el input está deshabilitado
 
   // Al cargar la página, poner el foco en el input de DNI
@@ -33,7 +34,7 @@ const AsistenciaCard = () => {
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
-  }, []);
+  },);
 
 
   const interpretarFecha = (fecha) => {
@@ -105,18 +106,24 @@ const AsistenciaCard = () => {
   };
 
   const handleRegistrar = async () => {
-    if (cameraRef.current) {
-      cameraRef.current.capture(); // ← Llama la función del hijo
-    }
 
+    setIsLoading(true); // Activar el loading
+    //para el nombre de la imagen
+    const now = new Date();
+    const filename = `f-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-h-${now.getHours()}-${now.getMinutes()}-d-${now.getDay()}-${dni}.jpg`;
 
+   
     try {
       // Realiza la solicitud POST al backend
-      const response = await axios.post('http://localhost:9000/api/asistencia', { dni });
-
+      const response = await axios.post('http://localhost:9000/api/asistencia', { dni, imagen: filename });
+     
       // Si la respuesta es exitosa, muestra el mensaje
       if (response.data.success) {
-       // alert('✅ Asistencia registrada exitosamente');
+        // Si la respuesta es exitosa, llama a la función de captura de la cámara
+        if (cameraRef.current) {
+          cameraRef.current.capture(); // ← Llama la función del hijo
+        }
+        // ('✅ Asistencia registrada exitosamente');
         Swal.fire({
           title: 'Asistencia OK',
           text: '✅ Asistencia registrada exitosamente',
@@ -129,13 +136,13 @@ const AsistenciaCard = () => {
       }
     } catch (error) {
       if (error.response.data.message === "Persona no encontrada con ese DNI") {
-        //alert('❌ ' + error.response.data.message);
+        //('❌ ' + error.response.data.message);
         Swal.fire({
           title: 'Error DNI',
           html: error.response.data.message,
           icon: 'error',
           confirmButtonText: 'Aceptar',
-        
+
         });
         inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
       } else {
@@ -146,18 +153,20 @@ const AsistenciaCard = () => {
           html: error.response.data.message,
           icon: 'error',
           confirmButtonText: 'Aceptar',
-          
+
         });
         inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
       }
 
 
+    }finally {
+      setIsLoading(false); // Desactivar el loading una vez terminada la solicitud
     }
 
   };
 
   // //← ✅EN CASO NO HAYA CAMARA
-  //const isCameraReady = cameraRef.current?.isCameraReady;
+  const isCameraReady = cameraRef.current?.isCameraReady;
   //← ✅EN CASO NO HAYA CAMARA 
 
 
@@ -190,7 +199,7 @@ const AsistenciaCard = () => {
 
             <button
               onClick={handleRegistrar}
-              disabled={isButtonDisabled} // Deshabilitar el botón si el DNI no es válido
+              disabled={isButtonDisabled || !isCameraReady} // Deshabilitar el botón si el DNI no es válido
               ref={btnRegRef} // Usar ref para acceder al botón
               className={isButtonDisabled ? 'disabled' : ''} // Condicional para aplicar la clase disabled
 
@@ -203,7 +212,14 @@ const AsistenciaCard = () => {
             >
               REGISTRAR</button>
           </div>
-
+          
+          {/* Mostrar spinner mientras se carga */}
+          {isLoading && (
+             <div className="loading-container">
+             <div className="spinner-border" role="status" />
+             <div className="text-white">Cargando...</div>
+           </div>
+          )}
 
           <div className="camera-section">
             <CameraCapture dni={dni} ref={cameraRef} />

@@ -40,7 +40,7 @@ app.get('/', (req, res) => {
 
 // Ruta para registrar asistencia
 app.post('/api/asistencia', async (req, res) => {
-  const { dni, imagen } = req.body;
+  const { dni,imagen } = req.body;
   const fechaHora = new Date(); // Marca de tiempo del servidor
   const options = { timeZone: 'America/Lima' }; // Hora de Lima
   const horaActual = `${fechaHora.getHours()}:${fechaHora.getMinutes()}`;
@@ -80,7 +80,8 @@ app.post('/api/asistencia', async (req, res) => {
     }
 
     // Paso 5: Registrar la asistencia
-    const insertResult = await query('INSERT INTO asistencias (persona_id, fecha_hora, fecha, tipo_asistencia_id, evidencia_id) VALUES (?, ?, ?, ?, ?)', [personaId, fechaHora, fechaActual, tipoAsistenciaId, imagen]);
+    const insertResult = await query('INSERT INTO asistencias (persona_id, fecha_hora, fecha, tipo_asistencia_id, evidencia_asi) VALUES (?, ?, ?, ?, ?)', [personaId, fechaHora, fechaActual, tipoAsistenciaId, imagen]);
+    console.log('filename', imagen);
 
     return res.json({ success: true, message: 'Asistencia registrada exitosamente: \n' +' ' +nombres + ' ' + apellidos});
 
