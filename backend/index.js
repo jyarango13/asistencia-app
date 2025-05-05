@@ -2,6 +2,8 @@ const express = require('express');
 const mysql = require('mysql');
 const cors = require('cors');
 
+const fs = require('fs');
+const path = require('path');
 // Inicializamos la aplicación Express
 const app = express();
 app.use(cors());
@@ -88,6 +90,46 @@ app.post('/api/asistencia', async (req, res) => {
   } catch (err) {
     console.error('Error en la operación:', err);
     return res.status(500).json({ success: false, message: 'Error al procesar la solicitud' });
+  }
+});
+
+
+
+// Ruta para recibir la imagen y guardarla en el servidor
+app.post('/api/upload', (req, res) => {
+  const { image, filename } = req.body;
+
+  // Obtener la fecha actual (año, mes, día)
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Asegurarse de que el mes tenga 2 dígitos
+  const day = now.getDate().toString().padStart(2, '0'); // Asegurarse de que el día tenga 2 dígitos
+
+  // Crear la ruta completa del directorio
+  const baseDir = path.join('D:', 'proyectos', 'asistencia-app', 'asistencias');
+  const yearDir = path.join(baseDir, year.toString());
+  const monthDir = path.join(yearDir, month);
+  const dayDir = path.join(monthDir, day);
+
+  // Verificar si las carpetas existen, y si no, crearlas
+  fs.mkdirSync(dayDir, { recursive: true });  // 'recursive: true' asegura que se creen todas las carpetas necesarias
+
+  // Guardar la imagen en la ruta calculada
+  const imagePath = path.join(dayDir, filename);
+  const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+  console.log('Base64 Data Length:', base64Data.length);  // Verifica si la longitud es mayor que 0
+
+  try {
+    // Escribir la imagen en el archivo
+    fs.writeFileSync(imagePath, base64Data, 'base64');
+
+    // Retornar la URL de la imagen guardada
+    const fileUrl = `http://localhost:9000/asistencias/${year}/${month}/${day}/${filename}`;
+    //res.json({ success: true, fileUrl });
+    console.log('Imagen guardada en:', fileUrl);
+  } catch (err) {
+    console.error('Error al guardar la imagen:', err);
+    res.status(500).json({ success: false, message: 'Error al guardar la imagen' });
   }
 });
 
