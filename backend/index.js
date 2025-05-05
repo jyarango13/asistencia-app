@@ -39,21 +39,54 @@ app.get('/', (req, res) => {
   res.send('API funcionando correctamente');
 });
 
+  //para la imagen
+  const saveImage = (image, filename) => {
+    // Obtener la fecha actual (año, mes, día)
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Asegurarse de que el mes tenga 2 dígitos
+    const day = now.getDate().toString().padStart(2, '0'); // Asegurarse de que el día tenga 2 dígitos
+
+    // Crear la ruta completa del directorio
+    const baseDir = path.join('D:', 'proyectos', 'asistencia-app', 'asistencias');
+    const yearDir = path.join(baseDir, year.toString());
+    const monthDir = path.join(yearDir, month);
+    const dayDir = path.join(monthDir, day);
+
+    // Verificar si las carpetas existen, y si no, crearlas
+    fs.mkdirSync(dayDir, { recursive: true });  // 'recursive: true' asegura que se creen todas las carpetas necesarias
+
+    // Guardar la imagen en la ruta calculada
+    const imagePath = path.join(dayDir, filename);
+    const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+    console.log('Base64 Data Length:', base64Data.length);  // Verifica si la longitud es mayor que 0
+
+    fs.writeFileSync(imagePath, base64Data, 'base64');
+    // Retornar la URL de la imagen guardada
+    const fileUrl = `http://localhost:9000/asistencias/${year}/${month}/${day}/${filename}`;
+    //res.json({ success: true, fileUrl });
+    console.log('Imagen guardada correctamente en:', fileUrl);
+
+    //finaliza imagen
+  };
 
 // Ruta para registrar asistencia
 app.post('/api/asistencia', async (req, res) => {
-  const { dni,imagen } = req.body;
-  const fechaHora = new Date(); // Marca de tiempo del servidor
-  const options = { timeZone: 'America/Lima' }; // Hora de Lima
-  const horaActual = `${fechaHora.getHours()}:${fechaHora.getMinutes()}`;
-  const fechaActual = fechaHora.toLocaleDateString('en-CA', options); // Solo la fecha 'YYYY-MM-DD'
+  const { dni, image, filename } = req.body;
+
 
   try {
     // Paso 1: Verificar si el DNI existe
     const result = await query('SELECT id, nombres, apellidos, rol_id FROM personas WHERE dni = ?', [dni]);
     if (result.length === 0) {
-      return res.status(404).json({ success: false, message: 'Persona no encontrada con DNI: '+ dni });
+      return res.status(404).json({ success: false, message: 'Persona no encontrada con DNI: ' + dni });
     }
+
+   //para comprobar horas
+    const fechaHora = new Date(); // Marca de tiempo del servidor
+    const options = { timeZone: 'America/Lima' }; // Hora de Lima
+    const horaActual = `${fechaHora.getHours()}:${fechaHora.getMinutes()}`;
+    const fechaActual = fechaHora.toLocaleDateString('en-CA', options); // Solo la fecha 'YYYY-MM-DD'
 
     const personaId = result[0].id;
     const nombres = result[0].nombres;
@@ -82,10 +115,18 @@ app.post('/api/asistencia', async (req, res) => {
     }
 
     // Paso 5: Registrar la asistencia
-    const insertResult = await query('INSERT INTO asistencias (persona_id, fecha_hora, fecha, tipo_asistencia_id, evidencia_asi) VALUES (?, ?, ?, ?, ?)', [personaId, fechaHora, fechaActual, tipoAsistenciaId, imagen]);
-    console.log('filename', imagen);
+    const insertResult = await query('INSERT INTO asistencias (persona_id, fecha_hora, fecha, tipo_asistencia_id, evidencia_asi) VALUES (?, ?, ?, ?, ?)', [personaId, fechaHora, fechaActual, tipoAsistenciaId, filename]);
+    // Verificar si el INSERT fue exitoso antes de proceder a guardar la imagen
+    if (insertResult.affectedRows > 0) {
+      // Si la inserción fue exitosa, entonces guardar la imagen
+      const imageUrl = saveImage(image, filename); // Llamar a saveImage para guardar la imagen
 
-    return res.json({ success: true, message: 'Asistencia registrada exitosamente: \n' +' ' +nombres + ' ' + apellidos});
+      // Devolver la respuesta con la URL de la imagen y mensaje de éxito
+      return res.json({ success: true, message: 'Asistencia registrada exitosamente: \n' + ' ' + nombres + ' ' + apellidos, imageUrl });
+    } else {
+      return res.status(500).json({ success: false, message: 'Error al registrar la asistencia' });
+    }
+    // return res.json({ success: true, message: 'Asistencia registrada exitosamente: \n' + ' ' + nombres + ' ' + apellidos });
 
   } catch (err) {
     console.error('Error en la operación:', err);
@@ -95,43 +136,43 @@ app.post('/api/asistencia', async (req, res) => {
 
 
 
-// Ruta para recibir la imagen y guardarla en el servidor
-app.post('/api/upload', (req, res) => {
-  const { image, filename } = req.body;
+// // Ruta para recibir la imagen y guardarla en el servidor
+// app.post('/api/upload', (req, res) => {
+//   const { image, filename } = req.body;
 
-  // Obtener la fecha actual (año, mes, día)
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Asegurarse de que el mes tenga 2 dígitos
-  const day = now.getDate().toString().padStart(2, '0'); // Asegurarse de que el día tenga 2 dígitos
+//   // Obtener la fecha actual (año, mes, día)
+//   const now = new Date();
+//   const year = now.getFullYear();
+//   const month = (now.getMonth() + 1).toString().padStart(2, '0'); // Asegurarse de que el mes tenga 2 dígitos
+//   const day = now.getDate().toString().padStart(2, '0'); // Asegurarse de que el día tenga 2 dígitos
 
-  // Crear la ruta completa del directorio
-  const baseDir = path.join('D:', 'proyectos', 'asistencia-app', 'asistencias');
-  const yearDir = path.join(baseDir, year.toString());
-  const monthDir = path.join(yearDir, month);
-  const dayDir = path.join(monthDir, day);
+//   // Crear la ruta completa del directorio
+//   const baseDir = path.join('D:', 'proyectos', 'asistencia-app', 'asistencias');
+//   const yearDir = path.join(baseDir, year.toString());
+//   const monthDir = path.join(yearDir, month);
+//   const dayDir = path.join(monthDir, day);
 
-  // Verificar si las carpetas existen, y si no, crearlas
-  fs.mkdirSync(dayDir, { recursive: true });  // 'recursive: true' asegura que se creen todas las carpetas necesarias
+//   // Verificar si las carpetas existen, y si no, crearlas
+//   fs.mkdirSync(dayDir, { recursive: true });  // 'recursive: true' asegura que se creen todas las carpetas necesarias
 
-  // Guardar la imagen en la ruta calculada
-  const imagePath = path.join(dayDir, filename);
-  const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
-  console.log('Base64 Data Length:', base64Data.length);  // Verifica si la longitud es mayor que 0
+//   // Guardar la imagen en la ruta calculada
+//   const imagePath = path.join(dayDir, filename);
+//   const base64Data = image.replace(/^data:image\/\w+;base64,/, '');
+//   console.log('Base64 Data Length:', base64Data.length);  // Verifica si la longitud es mayor que 0
 
-  try {
-    // Escribir la imagen en el archivo
-    fs.writeFileSync(imagePath, base64Data, 'base64');
+//   try {
+//     // Escribir la imagen en el archivo
+//     fs.writeFileSync(imagePath, base64Data, 'base64');
 
-    // Retornar la URL de la imagen guardada
-    const fileUrl = `http://localhost:9000/asistencias/${year}/${month}/${day}/${filename}`;
-    //res.json({ success: true, fileUrl });
-    console.log('Imagen guardada en:', fileUrl);
-  } catch (err) {
-    console.error('Error al guardar la imagen:', err);
-    res.status(500).json({ success: false, message: 'Error al guardar la imagen' });
-  }
-});
+//     // Retornar la URL de la imagen guardada
+//     const fileUrl = `http://localhost:9000/asistencias/${year}/${month}/${day}/${filename}`;
+//     //res.json({ success: true, fileUrl });
+//     console.log('Imagen guardada en:', fileUrl);
+//   } catch (err) {
+//     console.error('Error al guardar la imagen:', err);
+//     res.status(500).json({ success: false, message: 'Error al guardar la imagen' });
+//   }
+// });
 
 // Función para ejecutar consultas de forma limpia usando Promesas
 function query(sql, params) {

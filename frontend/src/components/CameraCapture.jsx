@@ -1,7 +1,6 @@
 
 import React, { useEffect, useRef, forwardRef, useImperativeHandle, useState } from 'react';
 import Swal from 'sweetalert2';
-import axios from 'axios';
 
 const CameraCapture = forwardRef(({ dni }, ref) => {
   const videoRef = useRef(null);
@@ -35,7 +34,7 @@ const CameraCapture = forwardRef(({ dni }, ref) => {
   }, []);
 
 
-  const handleCapture = async() => {
+  const handleCapture = () => {
 
     //← ✅EN CASO NO HAYA CAMARA
     const canvas = canvasRef.current;
@@ -43,28 +42,13 @@ const CameraCapture = forwardRef(({ dni }, ref) => {
     context.drawImage(videoRef.current, 0, 0, 300, 300);
     //← ✅EN CASO NO HAYA CAMARA
 
-    const now = new Date();
-    const filename = `f-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-h-${now.getHours()}-${now.getMinutes()}-d-${now.getDay()}-${dni}.jpg`;
-    const enlace = document.createElement('a');
-    enlace.download = filename;
-
-    //← ✅EN CASO NO HAYA CAMARA
-    //enlace.href = canvas.toDataURL();
     //← ✅EN CASO NO HAYA CAMARA
     const imageData=canvas.toDataURL();
-    //enlace.click();
-    try {
-      const response = await axios.post('http://localhost:9000/api/upload', {
-        image: imageData,  // Enviar los datos de la imagen
-        filename: filename  // Enviar el nombre del archivo
-      });
-  
-      // Suponiendo que el backend responde con la URL del archivo guardado
-      const fileUrl = response.data.fileUrl;
-      window.location.href = fileUrl;  // Redirigir al usuario para descargar la imagen
-    } catch (error) {
-      console.error('Error uploading image:', error);
-    }
+    //← ✅EN CASO NO HAYA CAMARA
+ 
+    console.log('Imagen capturada:', imageData); // Verifica la imagen capturada
+    return imageData;
+ 
   };
 
   // Exponer método al padre (AsistenciaCard)

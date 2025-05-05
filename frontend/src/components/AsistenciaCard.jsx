@@ -34,7 +34,7 @@ const AsistenciaCard = () => {
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
-  },);
+  },[]);
 
 
   const interpretarFecha = (fecha) => {
@@ -112,11 +112,22 @@ const AsistenciaCard = () => {
     const now = new Date();
     const filename = `f-${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}-h-${now.getHours()}-${now.getMinutes()}-d-${now.getDay()}-${dni}.jpg`;
 
-   
+
     try {
+      // Capturar la imagen del canvas
+      //const canvas = cameraRef.current.canvasRef.current;  // Obtener referencia al canvas desde CameraCapture
+      //const imageData = canvas.toDataURL();  // Convertir el canvas a imagen base64
+      const imageData = cameraRef.current.capture();
       // Realiza la solicitud POST al backend
-      const response = await axios.post('http://localhost:9000/api/asistencia', { dni, imagen: filename });
-     
+      const response = await axios.post('http://localhost:9000/api/asistencia', {
+        dni,
+        image: imageData,  // Enviar los datos de la imagen al backend
+        filename,            // Enviar el nombre del archivo
+      });
+      console.log('Respuesta del servidor:', response.data); // Verifica la respuesta del servidor
+      console.log('DNI:', dni); // Verifica el DNI enviado al servidor
+      console.log('Imagen:', imageData); // Verifica la imagen enviada al servidor
+      console.log('Filename:', filename); // Verifica el nombre del archivo enviado al servidor
       // Si la respuesta es exitosa, muestra el mensaje
       if (response.data.success) {
         // Si la respuesta es exitosa, llama a la función de captura de la cámara
@@ -159,7 +170,7 @@ const AsistenciaCard = () => {
       }
 
 
-    }finally {
+    } finally {
       setIsLoading(false); // Desactivar el loading una vez terminada la solicitud
     }
 
@@ -212,13 +223,13 @@ const AsistenciaCard = () => {
             >
               REGISTRAR</button>
           </div>
-          
+
           {/* Mostrar spinner mientras se carga */}
           {isLoading && (
-             <div className="loading-container">
-             <div className="spinner-border" role="status" />
-             <div className="text-white">Cargando...</div>
-           </div>
+            <div className="loading-container">
+              <div className="spinner-border" role="status" />
+              <div className="text-white">Cargando...</div>
+            </div>
           )}
 
           <div className="camera-section">
