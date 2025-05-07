@@ -19,10 +19,34 @@ const AsistenciaCard = () => {
   const btnRegRef = useRef();
   const [currentTime, setCurrentTime] = useState({ date: '', time: '' });
   const [isLoading, setIsLoading] = useState(false); // Estado de loading
+  const [isBackendAvailable, setIsBackendAvailable] = useState(true); //validar al iniciar si el backend esta disponible
   //const [isInputDisabled, setIsInputDisabled] = useState(false); // Controla si el input está deshabilitado
+
+
+  const checkBackendConnection = async () => {
+    try {
+      // Realizar una solicitud GET simple para verificar si el backend responde
+      await axios.get('http://localhost:9000/api/verify'); // Suponiendo que tienes esta ruta en el backend
+      setIsBackendAvailable(true); // Backend disponible
+    } catch (error) {
+      setIsBackendAvailable(false); // Si no hay respuesta del servidor
+      Swal.fire({
+        title: 'Error de Conexión',
+        text: 'Actualiza la página. Si el problema persiste comunica a PERSONAL.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+    }
+  };
+
 
   // Al cargar la página, poner el foco en el input de DNI
   useEffect(() => {
+//verificar backend
+    //verificacion de backend
+    checkBackendConnection();
+//termina verificacion de backend
+
     inputDniRef.current.focus(); // Establecer el foco en el input de DNI al cargar la página
     // Actualizar la hora y fecha cuando el componente se monta
     getTimeAndDate();
@@ -34,7 +58,10 @@ const AsistenciaCard = () => {
 
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
-  },[]);
+
+
+
+  }, []);
 
 
   const interpretarFecha = (fecha) => {
@@ -106,6 +133,19 @@ const AsistenciaCard = () => {
   };
 
   const handleRegistrar = async () => {
+    
+    checkBackendConnection();
+
+    //verifcando backend
+    if (!isBackendAvailable) {
+      Swal.fire({
+        title: 'Error de Conexión',
+        text: 'Actualiza la página. Si el problema persiste comunica a PERSONAL.',
+        icon: 'error',
+        confirmButtonText: 'Aceptar',
+      });
+      return;
+    }
 
     setIsLoading(true); // Activar el loading
     //para el nombre de la imagen
@@ -115,8 +155,7 @@ const AsistenciaCard = () => {
 
     try {
       // Capturar la imagen del canvas
-      //const canvas = cameraRef.current.canvasRef.current;  // Obtener referencia al canvas desde CameraCapture
-      //const imageData = canvas.toDataURL();  // Convertir el canvas a imagen base64
+      //captura del hijo
       const imageData = cameraRef.current.capture();
       // Realiza la solicitud POST al backend
       const response = await axios.post('http://localhost:9000/api/asistencia', {
@@ -124,29 +163,36 @@ const AsistenciaCard = () => {
         image: imageData,  // Enviar los datos de la imagen al backend
         filename,            // Enviar el nombre del archivo
       });
-      console.log('Respuesta del servidor:', response.data); // Verifica la respuesta del servidor
-      console.log('DNI:', dni); // Verifica el DNI enviado al servidor
-      console.log('Imagen:', imageData); // Verifica la imagen enviada al servidor
-      console.log('Filename:', filename); // Verifica el nombre del archivo enviado al servidor
-      // Si la respuesta es exitosa, muestra el mensaje
-      if (response.data.success) {
-        // Si la respuesta es exitosa, llama a la función de captura de la cámara
-        if (cameraRef.current) {
-          cameraRef.current.capture(); // ← Llama la función del hijo
-        }
-        // ('✅ Asistencia registrada exitosamente');
-        Swal.fire({
-          title: 'Asistencia OK',
-          text: '✅ Asistencia registrada exitosamente',
-          icon: 'SUCCESS',
-          confirmButtonText: 'Aceptar',
-          timer: 3000 // 3 segundos
-        });
-        setDni(''); // Limpiar el input cuando la asistencia sea exitosa
-        inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
-      }
-    } catch (error) {
-      if (error.response.data.message === "Persona no encontrada con ese DNI") {
+     
+        // Si la respuesta es exitosa, muestra el mensaje
+        if (response.data.success) {
+          // Si la respuesta es exitosa, llama a la función de captura de la cámara
+          // if (cameraRef.current) {
+          //   cameraRef.current.capture(); // ← Llama la función del hijo
+          // }
+          // ('✅ Asistencia registrada exitosamente');
+          Swal.fire({
+            title: 'Asistencia OK',
+            text: '✅ Asistencia registrada exitosamente',
+            icon: 'SUCCESS',
+            confirmButtonText: 'Aceptar',
+            timer: 3000 // 3 segundos
+          });
+          setDni(''); // Limpiar el input cuando la asistencia sea exitosa
+          inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
+
+        } 
+    }
+
+
+    catch (error) {
+
+
+      // La solicitud fue realizada y el servidor respondió con un estado de error
+      console.log('❌ ' + error.message);
+   
+
+      if (error.response.status === 404 && error.response.data.message === "Persona no encontrada con ese DNI") {
         //('❌ ' + error.response.data.message);
         Swal.fire({
           title: 'Error DNI',
@@ -156,7 +202,10 @@ const AsistenciaCard = () => {
 
         });
         inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
-      } else {
+        console.log('❌ ' + error.response.data.message);
+      }
+
+      else {
         // Si no se puede obtener el mensaje, mostrar un error genérico
         setDni(''); // Limpiar el input cuando el error sea diferente
         Swal.fire({
@@ -164,13 +213,13 @@ const AsistenciaCard = () => {
           html: error.response.data.message,
           icon: 'error',
           confirmButtonText: 'Aceptar',
-
         });
         inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
       }
 
 
-    } finally {
+    }
+    finally {
       setIsLoading(false); // Desactivar el loading una vez terminada la solicitud
     }
 

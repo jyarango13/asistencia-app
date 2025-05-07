@@ -46,7 +46,7 @@ const CameraCapture = forwardRef(({ dni }, ref) => {
     const imageData=canvas.toDataURL();
     //← ✅EN CASO NO HAYA CAMARA
  
-    console.log('Imagen capturada:', imageData); // Verifica la imagen capturada
+    //console.log('Imagen capturada:', imageData); // Verifica la imagen capturada
     return imageData;
  
   };
