@@ -1,7 +1,7 @@
 import React from 'react';
 import './App.css';
 import 'bootstrap/dist/css/bootstrap.min.css';
-import AsistenciaCard from './components/AsistenciaCard.jsx';
+import AttendanceCard from './components/AttendanceIni/AttendanceCard.jsx';
 
 function App() {
   return (
@@ -9,7 +9,7 @@ function App() {
       <>
         <div className="container d-flex justify-content-center align-items-center vh-100">
           <div >
-            <AsistenciaCard />
+            <AttendanceCard />
 
           </div>
         </div>

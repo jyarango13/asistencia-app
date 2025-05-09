@@ -235,7 +235,7 @@ const AsistenciaCard = () => {
 
       <div className="card">
         <div className="card-header">
-          <h1>ASISTENCIA</h1>
+          <h1>ASISTENCIA FARMACIA 2025</h1>
           <div className="date">{currentTime.date}</div>
           <div className="time">{currentTime.time}</div>
         </div>
