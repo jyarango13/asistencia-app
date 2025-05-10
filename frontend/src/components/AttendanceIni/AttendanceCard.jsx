@@ -1,5 +1,5 @@
 import React from 'react';
-import './AsistenciaCard.css';
+import './AttendanceCard.css';
 import CameraCapture from './CameraCapture';
 import { useState, useRef, useEffect } from 'react';
 import Swal from 'sweetalert2';
@@ -11,7 +11,7 @@ import Swal from 'sweetalert2';
 import axios from 'axios';
 
 
-const AsistenciaCard = () => {
+const AttendanceCard = () => {
   const [dni, setDni] = useState("");
   const cameraRef = useRef();
   const [isButtonDisabled, setIsButtonDisabled] = useState(true); // Estado para controlar si el botón está habilitado o no
@@ -294,4 +294,4 @@ const AsistenciaCard = () => {
 };
 
 
-export default AsistenciaCard;
+export default AttendanceCard;
