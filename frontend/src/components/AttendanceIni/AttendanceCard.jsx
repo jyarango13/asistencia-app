@@ -42,10 +42,10 @@ const AttendanceCard = () => {
 
   // Al cargar la página, poner el foco en el input de DNI
   useEffect(() => {
-//verificar backend
+    //verificar backend
     //verificacion de backend
     checkBackendConnection();
-//termina verificacion de backend
+    //termina verificacion de backend
 
     inputDniRef.current.focus(); // Establecer el foco en el input de DNI al cargar la página
     // Actualizar la hora y fecha cuando el componente se monta
@@ -133,7 +133,7 @@ const AttendanceCard = () => {
   };
 
   const handleRegistrar = async () => {
-    
+
     checkBackendConnection();
 
     //verifcando backend
@@ -163,25 +163,28 @@ const AttendanceCard = () => {
         image: imageData,  // Enviar los datos de la imagen al backend
         filename,            // Enviar el nombre del archivo
       });
-     
-        // Si la respuesta es exitosa, muestra el mensaje
-        if (response.data.success) {
-          // Si la respuesta es exitosa, llama a la función de captura de la cámara
-          // if (cameraRef.current) {
-          //   cameraRef.current.capture(); // ← Llama la función del hijo
-          // }
-          // ('✅ Asistencia registrada exitosamente');
-          Swal.fire({
-            title: 'Asistencia OK',
-            text: '✅ Asistencia registrada exitosamente',
-            icon: 'SUCCESS',
-            confirmButtonText: 'Aceptar',
-            timer: 3000 // 3 segundos
-          });
-          setDni(''); // Limpiar el input cuando la asistencia sea exitosa
-          inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
 
-        } 
+      // Si la respuesta es exitosa, muestra el mensaje
+      if (response.data.success) {
+       
+        // Si la respuesta es exitosa, llama a la función de captura de la cámara
+        // if (cameraRef.current) {
+        //   cameraRef.current.capture(); // ← Llama la función del hijo
+        // }
+        // ('✅ Asistencia registrada exitosamente');
+        Swal.fire({
+          title: 'Asistencia OK',
+          //text: '✅ Asistencia registrada exitosamente',
+          html: response.data.message,
+          icon: 'success',
+          iconColor: response.data.tipo === 'A002' ? '#4592e5' : undefined,
+          confirmButtonText: 'Aceptar',
+          timer: 3000 // 3 segundos
+        });
+        setDni(''); // Limpiar el input cuando la asistencia sea exitosa
+        inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
+
+      }
     }
 
 
@@ -189,9 +192,6 @@ const AttendanceCard = () => {
 
 
       // La solicitud fue realizada y el servidor respondió con un estado de error
-      console.log('❌ ' + error.message);
-   
-
       if (error.response.status === 404 && error.response.data.message === "Persona no encontrada con ese DNI") {
         //('❌ ' + error.response.data.message);
         Swal.fire({
@@ -202,7 +202,6 @@ const AttendanceCard = () => {
 
         });
         inputDniRef.current.focus(); // Volver a poner el foco en el input de DNI
-        console.log('❌ ' + error.response.data.message);
       }
 
       else {
