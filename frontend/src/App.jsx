@@ -15,7 +15,7 @@ function App() {
             {/* Ruta para la página principal */}
             <Route path="/" element={<AttendanceCard />} />
             {/* Ruta para /asistenciahoy */}
-            <Route path="/asistenciahoy" element={<Attendance />} />
+            <Route path="/asistenciahoydocente" element={<Attendance />} />
 
           </Routes>
 

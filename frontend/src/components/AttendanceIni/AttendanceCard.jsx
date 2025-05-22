@@ -49,13 +49,15 @@ const AttendanceCard = () => {
 
     inputDniRef.current.focus(); // Establecer el foco en el input de DNI al cargar la página
     // Actualizar la hora y fecha cuando el componente se monta
-    getTimeAndDate();
 
     // Configuramos un intervalo que se ejecute cada segundo para actualizar la hora
     const interval = setInterval(() => {
       getTimeAndDate();
     }, 1000); // 1000 ms = 1 segundo
 
+    getTimeAndDate();
+    //missing dependencies solucionando
+    
     // Limpiar el intervalo cuando el componente se desmonte
     return () => clearInterval(interval);
 
@@ -166,7 +168,7 @@ const AttendanceCard = () => {
 
       // Si la respuesta es exitosa, muestra el mensaje
       if (response.data.success) {
-       
+
         // Si la respuesta es exitosa, llama a la función de captura de la cámara
         // if (cameraRef.current) {
         //   cameraRef.current.capture(); // ← Llama la función del hijo

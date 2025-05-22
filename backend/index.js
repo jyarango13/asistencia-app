@@ -34,6 +34,10 @@ app.listen(PORT, () => {
   console.log(`Servidor backend escuchando en http://localhost:${PORT}`);
 });
 
+
+// Servir archivos estáticos de la carpeta 'asistencias'
+app.use('/asistencias', express.static(path.join(__dirname, '../asistencias')));
+
 // Ruta de prueba (opcional)
 app.get('/', (req, res) => {
   res.send('API funcionando correctamente');
@@ -124,7 +128,7 @@ app.post('/api/asistencia', async (req, res) => {
     else if (existingAsistencia.length === 1 && rolId === 'R003') {
       tipoAsistenciaId = 'A002'; // Salida
       textoAsistencia = 'Salida registrada'
-    } 
+    }
     else if (existingAsistencia.length > 0) {
       let tipoAsistencia = tipoAsistenciaId === 'A001' ? 'Ingreso' : 'Salida';
       return res.status(400).json({ success: false, message: `Ya has registrado tu  <strong>${tipoAsistencia}</strong> para hoy <br> ${nombres} ${apellidos}` });
@@ -151,6 +155,170 @@ app.post('/api/asistencia', async (req, res) => {
   }
 });
 
+
+// Ruta para obtener la asistencia de hoy
+app.get('/api/asistenciaHoyDocentes', (req, res) => {
+  const query = `
+        SELECT 
+            -- Apellidos y Nombres
+            p.apellidos AS "APELLIDOS",
+            p.nombres AS "NOMBRES",
+            r.nombre  AS "ROL",
+
+            -- Entrada (hora) y Salida (hora)
+            MAX(CASE WHEN ta.id = 'A001' THEN TIME(a.fecha_hora) END) AS "Entrada",
+            MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END) AS "Salida",
+
+            -- Foto de salida (Evidencia de Asistencia)
+            MAX(CASE WHEN ta.id = 'A001' THEN a.evidencia_asi END) AS "FotoIngreso",
+            MAX(CASE WHEN ta.id = 'A002' THEN a.evidencia_asi END) AS "FotoSalida",
+
+
+            
+        CASE 
+            -- Si la hora de entrada es posterior a la hora de inicio permitida
+            WHEN HOUR(MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END)) > HOUR(hp.hora_inicio) 
+            OR (HOUR(MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END)) = HOUR(hp.hora_inicio) 
+                AND MINUTE(MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END)) > MINUTE(hp.hora_inicio)) THEN
+                TIMESTAMPDIFF(MINUTE, hp.hora_inicio, 
+                    MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END))
+            ELSE 
+                -- Si la hora de entrada es antes de la hora permitida, la tardanza es 0
+                0
+        END AS "Tardanza",
+
+
+            -- Extra (después de su salida)
+            ABS(TIMESTAMPDIFF(MINUTE, 
+                MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END), hp.hora_fin)) AS "Extra",
+
+            -- Extra en horas y minutos
+            CONCAT(
+                FLOOR(ABS(TIMESTAMPDIFF(MINUTE, 
+                    MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END), hp.hora_fin)) / 60), 
+                ' H ',
+                MOD(ABS(TIMESTAMPDIFF(MINUTE, 
+                    MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END), hp.hora_fin)), 60), 
+                ' MIN'
+            ) AS "Extra en Horas",
+            
+
+            -- Horario (tipo de horario)
+            hp.hora_inicio AS "HoraInicio",
+            hp.hora_fin AS "HoraFin"
+
+        FROM 
+            personas p
+        JOIN 
+          roles r ON p.rol_id = r.id
+        JOIN 
+            asistencias a ON p.id = a.persona_id
+        JOIN 
+            tipo_asistencia ta ON a.tipo_asistencia_id = ta.id
+        JOIN 
+            horarios_permitidos hp ON p.rol_id = hp.rol_id
+
+        WHERE 
+            DATE(a.fecha) = curdate() AND r.id IN ("R001","R003") -- valida que solo sea docente Tc y TP
+
+        GROUP BY 
+            p.id, p.apellidos, p.nombres, hp.hora_inicio, hp.hora_fin
+
+        ORDER BY 
+            p.apellidos, p.nombres;
+
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error al ejecutar la consulta:', err.stack);
+      return res.status(500).json({ error: 'Error al obtener los datos' });
+    }
+    res.json(results);  // Devolver los datos obtenidos
+  });
+});
+
+// Ruta para obtener la asistencia de hoy
+app.get('/api/asistenciaHoyAdministrativos', (req, res) => {
+  const query = `
+        SELECT 
+            -- Apellidos y Nombres
+            p.apellidos AS "APELLIDOS",
+            p.nombres AS "NOMBRES",
+            r.nombre  AS "ROL",
+
+            -- Entrada (hora) y Salida (hora)
+            MAX(CASE WHEN ta.id = 'A001' THEN TIME(a.fecha_hora) END) AS "Entrada",
+            MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END) AS "Salida",
+
+            -- Foto de salida (Evidencia de Asistencia)
+            MAX(CASE WHEN ta.id = 'A001' THEN a.evidencia_asi END) AS "FotoIngreso",
+            MAX(CASE WHEN ta.id = 'A002' THEN a.evidencia_asi END) AS "FotoSalida",
+
+
+            
+        CASE 
+            -- Si la hora de entrada es posterior a la hora de inicio permitida
+            WHEN HOUR(MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END)) > HOUR(hp.hora_inicio) 
+            OR (HOUR(MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END)) = HOUR(hp.hora_inicio) 
+                AND MINUTE(MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END)) > MINUTE(hp.hora_inicio)) THEN
+                TIMESTAMPDIFF(MINUTE, hp.hora_inicio, 
+                    MAX(CASE WHEN ta.id = 'A001' THEN a.fecha_hora END))
+            ELSE 
+                -- Si la hora de entrada es antes de la hora permitida, la tardanza es 0
+                0
+        END AS "Tardanza",
+
+
+            -- Extra (después de su salida)
+            ABS(TIMESTAMPDIFF(MINUTE, 
+                MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END), hp.hora_fin)) AS "Extra",
+
+            -- Extra en horas y minutos
+            CONCAT(
+                FLOOR(ABS(TIMESTAMPDIFF(MINUTE, 
+                    MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END), hp.hora_fin)) / 60), 
+                ' H ',
+                MOD(ABS(TIMESTAMPDIFF(MINUTE, 
+                    MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END), hp.hora_fin)), 60), 
+                ' MIN'
+            ) AS "Extra en Horas",
+            
+
+            -- Horario (tipo de horario)
+            hp.hora_inicio AS "HoraInicio",
+            hp.hora_fin AS "HoraFin"
+
+        FROM 
+            personas p
+        JOIN 
+          roles r ON p.rol_id = r.id
+        JOIN 
+            asistencias a ON p.id = a.persona_id
+        JOIN 
+            tipo_asistencia ta ON a.tipo_asistencia_id = ta.id
+        JOIN 
+            horarios_permitidos hp ON p.rol_id = hp.rol_id
+
+        WHERE 
+            DATE(a.fecha) = curdate() AND r.id="R002" -- valida que solo sea administrativo
+
+        GROUP BY 
+            p.id, p.apellidos, p.nombres, hp.hora_inicio, hp.hora_fin
+
+        ORDER BY 
+            p.apellidos, p.nombres;
+
+  `;
+
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error al ejecutar la consulta:', err.stack);
+      return res.status(500).json({ error: 'Error al obtener los datos' });
+    }
+    res.json(results);  // Devolver los datos obtenidos
+  });
+});
 
 app.get('/api/verify', (req, res) => {
   res.status(200).send('Servidor disponible');

@@ -10,9 +10,10 @@ CREATE TABLE IF NOT EXISTS roles (
 
 -- Insertar roles (Ej: Docente, Administrativo, etc.)
 INSERT INTO roles (id, nombre) VALUES
-('R001', 'Docente'),
+('R001', 'Docente TC'),
 ('R002', 'Administrativo'),
-('R003', 'Docente TP');
+('R003', 'Docente TP'),
+('R004', 'Otros');
 
 -- Tabla de DEPARTAMENTOS
 CREATE TABLE IF NOT EXISTS departamentos (
@@ -40,11 +41,10 @@ CREATE TABLE IF NOT EXISTS personas (
 
 -- Insertar personas
 INSERT INTO personas (dni,nombres,apellidos, departamento_id, rol_id) VALUES 
-(47736164,'Juan','Pérez', 'D001', 'R001'),
-(08063663,'Sixto','Gonzalez', 'D001', 'R002'),
-(11111111,'Maria','Ruiz', 'D002', 'R001'),
-(55555555,'Paul','Roma', 'D003', 'R003'),
-(44444444,'Ana',' Gómez', 'D002', 'R002');
+('47736164','Juan','Pérez', 'D001', 'R001'),
+('08063663','Sixto','Gonzalez', 'D001', 'R002'),
+('55555555','Paul','Roma', 'D003', 'R003'),
+('11111111','Maria','Ruiz', 'D002', 'R004');
 
 
 -- Tabla de TIPOASISTENCIA
@@ -123,8 +123,8 @@ CREATE TABLE IF NOT EXISTS horarios_permitidos (
 -- Insertar horarios permitidos (Ejemplo de horarios para los roles)
 INSERT INTO horarios_permitidos (id, rol_id, hora_inicio, hora_fin) 
 VALUES 
-('H001', 'R001', '08:00:00', '18:00:00'), -- Horarios para docentes
-('H002', 'R002', '11:00:00', '13:00:00'), -- Horarios para docentes
+('H001', 'R001', '08:00:00', '13:00:00'), -- Horarios para docentes
+('H002', 'R002', '09:00:00', '12:00:00'), -- Horarios para docentes
 ('H003', 'R003', NULL, NULL); -- Horarios para administrativos
 
 

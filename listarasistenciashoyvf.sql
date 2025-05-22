@@ -1,15 +1,17 @@
 USE  sistema_asistencia;
 SELECT 
     -- Apellidos y Nombres
-    p.apellidos AS "A.PAT",
+    p.apellidos AS "APELLIDOS",
     p.nombres AS "NOMBRES",
+    r.nombre  AS "ROL",
 
     -- Entrada (hora) y Salida (hora)
     MAX(CASE WHEN ta.id = 'A001' THEN TIME(a.fecha_hora) END) AS "Entrada",
     MAX(CASE WHEN ta.id = 'A002' THEN TIME(a.fecha_hora) END) AS "Salida",
 
     -- Foto de salida (Evidencia de Asistencia)
-    MAX(CASE WHEN ta.id = 'A002' THEN a.evidencia_asi END) AS "Foto Salida",
+    MAX(CASE WHEN ta.id = 'A001' THEN a.evidencia_asi END) AS "FotoIngreso",
+    MAX(CASE WHEN ta.id = 'A002' THEN a.evidencia_asi END) AS "FotoSalida",
 
 
     
@@ -42,11 +44,13 @@ END AS "Tardanza",
     
 
     -- Horario (tipo de horario)
-    hp.hora_inicio AS "Hora Inicio",
-    hp.hora_fin AS "Hora Fin"
+    hp.hora_inicio AS "HoraInicio",
+    hp.hora_fin AS "HoraFin"
 
 FROM 
     personas p
+JOIN 
+	roles r ON p.rol_id = r.id
 JOIN 
     asistencias a ON p.id = a.persona_id
 JOIN 
@@ -55,7 +59,7 @@ JOIN
     horarios_permitidos hp ON p.rol_id = hp.rol_id
 
 WHERE 
-    DATE(a.fecha) = curdate()
+    DATE(a.fecha) = curdate() AND r.id IN ("R001","R003") -- valida que solo sea docente Tc y TP
 
 GROUP BY 
     p.id, p.apellidos, p.nombres, hp.hora_inicio, hp.hora_fin
